@@ -1,0 +1,3 @@
+[submodule "submodules/python-can"]
+	path = submodules/python-can
+	url = https://github.com/hardbyte/python-can.git
