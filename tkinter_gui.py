@@ -5,14 +5,12 @@ import os
 import csv
 import logging
 import re
-import ctypes
-import v_types
 
 import tkinter as tk
 from tkinter import ttk
 from logger import Gui_Streamer, Logger
 from help_functions import getCommand
-from can import Can_Interface
+import can
 
 class start_page(ttk.Frame):
     
@@ -145,6 +143,20 @@ class Message_Page(ttk.Frame):
         self.information_text.insert(tk.END, "Message content\n")
         self.information_text.insert(tk.END, command + "\n")
 
+    def send_message(self, command_name: str):
+        """ Send message on Can bus 
+            Parameters
+            ----------
+            command_name :
+                Name of command to send
+            Returns
+            -------
+            void
+        """
+        command = getCommand(command_name)
+        message = can.Message(arbitration_id=123, data=[int(x, 16) for x in command[1:]])
+        self.bus.send(message, timeout=0.2)
+        
     def __init__(self, parent):
         """ Message_Page init function
             Parameters
@@ -157,8 +169,8 @@ class Message_Page(ttk.Frame):
                 Message_Page object
         """
         super().__init__(parent)
+        self.bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
         self.name = "Messages"
-        self.v_can = Can_Interface()
 
         signal_entry_frame = tk.Frame(self)
         signal_information_frame = tk.Frame(self)
@@ -179,8 +191,6 @@ class Message_Page(ttk.Frame):
                 print(row)
                 self.listbox.insert(tk.END, row[0])
 
-        #signal_entry = tk.Entry(self, textvariable=input_string)
-        #signal_entry.bind('<Return>', self.add_entry)
         self.command_name = Input_Field(hex_entry_frame, width=20)
         self.command_name.text.set("Enter Name")
         self.hex0 = Input_Field(hex_entry_frame, width=3)
@@ -201,7 +211,7 @@ class Message_Page(ttk.Frame):
         self.information_text = tk.Text(signal_information_frame)
 
         send_button = ttk.Button(signal_information_frame, text="Send", style="Send.TButton")
-        send_button['command'] = lambda: self.v_can.send(self.listbox.get(tk.ACTIVE)) 
+        send_button['command'] = lambda: self.send_message(self.listbox.get(tk.ACTIVE)) 
         # Place all elements
         #signal_entry.grid(row="0", column="0")
 
