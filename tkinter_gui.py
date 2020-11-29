@@ -170,6 +170,7 @@ class Message_Page(ttk.Frame):
         """
         super().__init__(parent)
         self.bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
+        self.logger = can.Notifier(self.bus, [can.Printer()])
         self.name = "Messages"
 
         signal_entry_frame = tk.Frame(self)
