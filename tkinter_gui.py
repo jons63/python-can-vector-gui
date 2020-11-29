@@ -155,7 +155,7 @@ class Message_Page(ttk.Frame):
         self.bus.send(message, timeout=0.2)
         
     def __init__(self, parent, bus):
-        """ Message_Page init function
+        """ Message_Page init function 
             Parameters
             ----------
             parent :
@@ -237,6 +237,10 @@ class download_page(ttk.Frame):
         self.name = "Download"
         ttk.Label(self, text="This is the third page").grid(column=0, row=0,padx=30,pady=30)
 
+def notebook_configure(self, event: tk.Event):
+    self.config(width=event.width, height=event.height)
+    print("halla")
+
 class Application(tk.Frame):
     """ Tkinter main Frame """
     def __init__(self, master='App'):
@@ -258,5 +262,4 @@ class Application(tk.Frame):
         frames = (start_page(tabControl, bus), Message_Page(tabControl, bus), download_page(tabControl))
         for F in frames:
             tabControl.add(F,text=F.name)
-
-        tabControl.pack()
+        tabControl.pack(fill="both", expand="True")
