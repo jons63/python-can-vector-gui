@@ -1,6 +1,7 @@
 import sys
 import logging
 import tkinter as tk
+import can
 
 class Gui_Streamer(logging.Handler):
     """ Streams data from logger to be visualized in gui """
@@ -62,3 +63,12 @@ class Logger(logging.Logger):
         handler = logging.FileHandler(filename='output.log')
         handler.setFormatter(formatter)
         self.addHandler(handler)
+
+class guiLogger(can.Listener):
+    def __init__(self, window: tk.Text):
+        self.window = window
+    
+    def on_message_received(self, msg):
+        self.window.config(state=tk.NORMAL)
+        self.window.insert(tk.END, str(msg) + '\n')
+        self.window.config(state=tk.DISABLED)

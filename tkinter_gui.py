@@ -3,18 +3,17 @@ import os
 #import time
 #import platform
 import csv
-import logging
 import re
 
 import tkinter as tk
 from tkinter import ttk
-from logger import Gui_Streamer, Logger
+from logger import Gui_Streamer, Logger, guiLogger
 from help_functions import getCommand
 import can
 
 class start_page(ttk.Frame):
     
-    def __init__(self, parent):
+    def __init__(self, parent, bus):
         super().__init__(parent)
         self.grid_anchor(anchor="c")
         self.name = "Start Page"
@@ -25,10 +24,8 @@ class start_page(ttk.Frame):
         quit_button = ttk.Button(self, text="QUIT", style="Delete.TButton", command=parent.master.destroy)
         delete_button = ttk.Button(self, text="Delete", style="Delete.TButton")
 
-        logger = Logger()
         text = tk.Text(self)
-        logger.addHandler(Gui_Streamer(sys.stdout, text))
-
+        self.log = can.Notifier(bus, [guiLogger(text)])
         with open('output.log', 'r', newline='') as file:
             #for row in file.read():
             text.insert(tk.END, file.read())
@@ -157,7 +154,7 @@ class Message_Page(ttk.Frame):
         message = can.Message(arbitration_id=123, data=[int(x, 16) for x in command[1:]])
         self.bus.send(message, timeout=0.2)
         
-    def __init__(self, parent):
+    def __init__(self, parent, bus):
         """ Message_Page init function
             Parameters
             ----------
@@ -169,10 +166,8 @@ class Message_Page(ttk.Frame):
                 Message_Page object
         """
         super().__init__(parent)
-        self.bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
-        self.logger = can.Notifier(self.bus, [can.Printer()])
         self.name = "Messages"
-
+        self.bus = bus
         signal_entry_frame = tk.Frame(self)
         signal_information_frame = tk.Frame(self)
         hex_entry_frame = tk.Frame(signal_entry_frame)
@@ -257,11 +252,11 @@ class Application(tk.Frame):
         """
         super().__init__(master)
         self.master = master
-
+        bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
         tabControl = ttk.Notebook(master)
 
-        for F in (start_page, Message_Page, download_page):
-            frame = F(tabControl)
-            tabControl.add(frame,text=frame.name)
+        frames = (start_page(tabControl, bus), Message_Page(tabControl, bus), download_page(tabControl))
+        for F in frames:
+            tabControl.add(F,text=F.name)
 
         tabControl.pack()
