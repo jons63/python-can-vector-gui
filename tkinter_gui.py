@@ -7,7 +7,7 @@ import re
 
 import tkinter as tk
 from tkinter import ttk
-from logger import Gui_Streamer, Logger, guiLogger
+from logger import guiLogger
 from help_functions import getCommand
 import can
 
