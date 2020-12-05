@@ -15,7 +15,6 @@ class start_page(ttk.Frame):
     
     def __init__(self, parent, bus):
         super().__init__(parent)
-        self.grid_anchor(anchor="c")
         self.name = "Start Page"
         style = ttk.Style()
         style.configure("Send.TButton", foreground="green", background="white")
@@ -32,7 +31,9 @@ class start_page(ttk.Frame):
         text.config(state=tk.DISABLED)
 
         # Place all elements
-        text.grid(row="0", column="0", rowspan="2", columnspan="3")
+        text.grid(rowspan="2", columnspan="3", sticky="NSEW")
+        tk.Grid.columnconfigure(self, text, weight=1)
+        tk.Grid.rowconfigure(self, text, weight=1)
 
         send_button.grid(row="3", column="0", padx=30,pady=30)
         quit_button.grid(row="3", column="1", padx=30,pady=30)
@@ -237,10 +238,6 @@ class download_page(ttk.Frame):
         self.name = "Download"
         ttk.Label(self, text="This is the third page").grid(column=0, row=0,padx=30,pady=30)
 
-def notebook_configure(self, event: tk.Event):
-    self.config(width=event.width, height=event.height)
-    print("halla")
-
 class Application(tk.Frame):
     """ Tkinter main Frame """
     def __init__(self, master='App'):
@@ -258,8 +255,7 @@ class Application(tk.Frame):
         self.master = master
         bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
         tabControl = ttk.Notebook(master)
-
+        tabControl.pack(fill="both", expand="True")
         frames = (start_page(tabControl, bus), Message_Page(tabControl, bus), download_page(tabControl))
         for F in frames:
             tabControl.add(F,text=F.name)
-        tabControl.pack(fill="both", expand="True")
