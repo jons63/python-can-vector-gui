@@ -7,35 +7,41 @@ import re
 
 import tkinter as tk
 from tkinter import ttk
-from logger import guiLogger
+from logger import GuiLogger
 from help_functions import getCommand
 import can
 
-class Log_page(ttk.Frame):
-    
-    def Create_log_window(self, parent, root):
-        log_window = tk.Toplevel(root)
-        tk.Label(log_window, text="This is the new window").pack()
+class LogPage(ttk.Frame):
 
-    def __init__(self, parent, bus, root):
+    def __close_log_window(self, tab_widget, log_window):
+        tab_widget.add(tab_widget.tabs()[0])
+        log_window.destroy()
+
+    def __create_log_window(self, tab_widget, bus):
+        log_window = tk.Toplevel(tab_widget)
+        tab_widget.hide(0)
+        log_window.protocol("WM_DELETE_WINDOW", lambda: self.__close_log_window(tab_widget, log_window))
+        window_log = GuiLogger(log_window)
+        can.Notifier(bus, [window_log])
+        window_log.grid(sticky="NSEW")
+        tk.Grid.columnconfigure(log_window, window_log, weight=1)
+        tk.Grid.rowconfigure(log_window, window_log, weight=1)
+
+    def __init__(self, parent, bus):
         super().__init__(parent)
         self.name = "Log Page"
         style = ttk.Style()
         style.configure("Send.TButton", foreground="green", background="white")
         style.configure("Delete.TButton", foreground="red", background="white")
-        popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.Create_log_window(self, root))
+        popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.__create_log_window(parent, bus))
 
-        text = tk.Text(self)
-        self.log = can.Notifier(bus, [guiLogger(text)])
-        with open('output.log', 'r', newline='') as file:
-            #for row in file.read():
-            text.insert(tk.END, file.read())
-        text.config(state=tk.DISABLED)
+        tab_log = GuiLogger(self)
+        can.Notifier(bus, [tab_log])
 
         # Place all elements
-        text.grid(sticky="NSEW")
-        tk.Grid.columnconfigure(self, text, weight=1)
-        tk.Grid.rowconfigure(self, text, weight=1)
+        tab_log.grid(sticky="NSEW")
+        tk.Grid.columnconfigure(self, tab_log, weight=1)
+        tk.Grid.rowconfigure(self, tab_log, weight=1)
 
         popout_button.grid(row="1", padx=30,pady=30)
 
@@ -256,6 +262,6 @@ class Application(tk.Frame):
         bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
         tab_control = ttk.Notebook(master)
         tab_control.pack(fill="both", expand="True")
-        tabs = (Log_page(tab_control, bus, master), Message_Page(tab_control, bus), Download_page(tab_control))
+        tabs = (LogPage(tab_control, bus), Message_Page(tab_control, bus), Download_page(tab_control))
         for tab in tabs:
             tab_control.add(tab,text=tab.name)
