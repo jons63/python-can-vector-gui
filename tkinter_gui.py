@@ -12,12 +12,35 @@ from help_functions import getCommand
 import can
 
 class LogPage(ttk.Frame):
-
-    def __close_log_window(self, tab_widget, log_window):
-        tab_widget.add(tab_widget.tabs()[0])
+    """ Displays a log of can messages """
+    def __close_log_window(self, tab_widget: ttk.Notebook, log_window: tk.Toplevel):
+        """ Close log window and show log tab instead
+        Parameters
+        ----------
+        tab_widget :
+            tk.Notebook widget
+        tk.Toplevel :
+            Window to close
+        Returns
+        -------
+        void
+        """
+        # @TODO Don´t use static index
+        tab_widget.add(tab_widget.tabs()[0]) 
         log_window.destroy()
 
-    def __create_log_window(self, tab_widget, bus):
+    def __create_log_window(self, tab_widget: ttk.Notebook, bus: can.Bus):
+        """ Open log window and hide log tab
+        Parameters
+        ----------
+        tab_widget :
+            tk.Notebook widget
+        bus :
+            Cam bus to listen for messages on
+        Returns
+        -------
+        void
+        """
         log_window = tk.Toplevel(tab_widget)
         tab_widget.hide(0)
         log_window.protocol("WM_DELETE_WINDOW", lambda: self.__close_log_window(tab_widget, log_window))
@@ -28,6 +51,14 @@ class LogPage(ttk.Frame):
         tk.Grid.rowconfigure(log_window, window_log, weight=1)
 
     def __init__(self, parent, bus):
+        """ Creates a frame containing a text widget that displays incoming can messages
+        Parameters
+        ----------
+        parent :
+            Parent widget
+        bus :
+            Cam bus to listen for messages on
+        """
         super().__init__(parent)
         self.name = "Log Page"
         style = ttk.Style()
@@ -46,7 +77,7 @@ class LogPage(ttk.Frame):
         popout_button.grid(row="1", padx=30,pady=30)
 
 class Input_Field(tk.Entry):
-    """ Fieled for user to input data """
+    """ Field for user to input data """
     def character_limit(self, length: int):
         """ Remove last written character from filed if max number of character are already written
             Parameters

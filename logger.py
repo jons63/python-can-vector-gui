@@ -8,9 +8,6 @@ class GuiLogger(tk.Frame, can.Listener):
         ----------
         parent :
             parent container to pace object in
-        Returns 
-        -------
-        List with command name and data bytes 
     """
     def __init__(self, parent: tk.Frame):
         super().__init__(parent)
