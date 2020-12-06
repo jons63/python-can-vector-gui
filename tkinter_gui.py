@@ -11,17 +11,19 @@ from logger import guiLogger
 from help_functions import getCommand
 import can
 
-class start_page(ttk.Frame):
+class Log_page(ttk.Frame):
     
-    def __init__(self, parent, bus):
+    def Create_log_window(self, parent, root):
+        log_window = tk.Toplevel(root)
+        tk.Label(log_window, text="This is the new window").pack()
+
+    def __init__(self, parent, bus, root):
         super().__init__(parent)
-        self.name = "Start Page"
+        self.name = "Log Page"
         style = ttk.Style()
         style.configure("Send.TButton", foreground="green", background="white")
         style.configure("Delete.TButton", foreground="red", background="white")
-        send_button = ttk.Button(self, text="Send", style="Send.TButton")
-        quit_button = ttk.Button(self, text="QUIT", style="Delete.TButton", command=parent.master.destroy)
-        delete_button = ttk.Button(self, text="Delete", style="Delete.TButton")
+        popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.Create_log_window(self, root))
 
         text = tk.Text(self)
         self.log = can.Notifier(bus, [guiLogger(text)])
@@ -31,13 +33,11 @@ class start_page(ttk.Frame):
         text.config(state=tk.DISABLED)
 
         # Place all elements
-        text.grid(rowspan="2", columnspan="3", sticky="NSEW")
+        text.grid(sticky="NSEW")
         tk.Grid.columnconfigure(self, text, weight=1)
         tk.Grid.rowconfigure(self, text, weight=1)
 
-        send_button.grid(row="3", column="0", padx=30,pady=30)
-        quit_button.grid(row="3", column="1", padx=30,pady=30)
-        delete_button.grid(row="3", column="2", padx=30,pady=30)
+        popout_button.grid(row="1", padx=30,pady=30)
 
 class Input_Field(tk.Entry):
     """ Fieled for user to input data """
@@ -232,7 +232,7 @@ class Message_Page(ttk.Frame):
         send_button.grid(row="1")
         signal_information_frame.grid(row="0", column="1", padx=(5,0))
 
-class download_page(ttk.Frame):
+class Download_page(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.name = "Download"
@@ -254,8 +254,8 @@ class Application(tk.Frame):
         super().__init__(master)
         self.master = master
         bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
-        tabControl = ttk.Notebook(master)
-        tabControl.pack(fill="both", expand="True")
-        frames = (start_page(tabControl, bus), Message_Page(tabControl, bus), download_page(tabControl))
-        for F in frames:
-            tabControl.add(F,text=F.name)
+        tab_control = ttk.Notebook(master)
+        tab_control.pack(fill="both", expand="True")
+        tabs = (Log_page(tab_control, bus, master), Message_Page(tab_control, bus), Download_page(tab_control))
+        for tab in tabs:
+            tab_control.add(tab,text=tab.name)
