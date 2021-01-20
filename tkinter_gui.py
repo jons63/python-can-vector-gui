@@ -172,13 +172,12 @@ class Message_Page(ttk.Frame):
             -------
             void
         """
-        #name = self.listbox.get(tk.ACTIVE)
-        name = self.listbox.get(self.listbox.curselection()[0])
-        print(name)
-        command = getCommand(name)
-        command = "{:s} {:s} {:s} {:s} {:s} {:s} {:s} {:s}".format(command[1], command[2], command[3], command[4], command[5], command[6], command[7], command[8])
-        self.information_text.insert(tk.END, "Message content\n")
-        self.information_text.insert(tk.END, command + "\n")
+        if len(self.listbox.curselection()) > 0:
+            name = self.listbox.get(self.listbox.curselection()[0])
+            command = getCommand(name)
+            command = "{:s} {:s} {:s} {:s} {:s} {:s} {:s} {:s}".format(command[1], command[2], command[3], command[4], command[5], command[6], command[7], command[8])
+            self.information_text.insert(tk.END, "Message content\n")
+            self.information_text.insert(tk.END, command + "\n")
 
     def send_message(self, command_name: str):
         """ Send message on Can bus 
