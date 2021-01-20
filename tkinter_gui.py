@@ -26,7 +26,9 @@ class LogPage(ttk.Frame):
         void
         """
         # @TODO Don´t use static index
+        self.__Notifier.remove_listener(self.__Notifier.listeners[0])
         tab_widget.add(tab_widget.tabs()[0]) 
+        self.__Notifier.add_listener(self.__tab_log)
         log_window.destroy()
 
     def __create_log_window(self, tab_widget: ttk.Notebook, bus: can.Bus):
@@ -41,11 +43,12 @@ class LogPage(ttk.Frame):
         -------
         void
         """
+        self.__Notifier.remove_listener(self.__tab_log)
         log_window = tk.Toplevel(tab_widget)
         tab_widget.hide(0)
         log_window.protocol("WM_DELETE_WINDOW", lambda: self.__close_log_window(tab_widget, log_window))
         window_log = GuiLogger(log_window)
-        can.Notifier(bus, [window_log])
+        self.__Notifier.add_listener(window_log)
         window_log.grid(sticky="NSEW")
         tk.Grid.columnconfigure(log_window, window_log, weight=1)
         tk.Grid.rowconfigure(log_window, window_log, weight=1)
@@ -61,18 +64,17 @@ class LogPage(ttk.Frame):
         """
         super().__init__(parent)
         self.name = "Log Page"
+        self.__tab_log = GuiLogger(self)
+        self.__Notifier = can.Notifier(bus, [self.__tab_log])
         style = ttk.Style()
         style.configure("Send.TButton", foreground="green", background="white")
         style.configure("Delete.TButton", foreground="red", background="white")
         popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.__create_log_window(parent, bus))
 
-        tab_log = GuiLogger(self)
-        can.Notifier(bus, [tab_log])
-
         # Place all elements
-        tab_log.grid(sticky="NSEW")
-        tk.Grid.columnconfigure(self, tab_log, weight=1)
-        tk.Grid.rowconfigure(self, tab_log, weight=1)
+        self.__tab_log.grid(sticky="NSEW")
+        tk.Grid.columnconfigure(self, self.__tab_log, weight=1)
+        tk.Grid.rowconfigure(self, self.__tab_log, weight=1)
 
         popout_button.grid(row="1", padx=30,pady=30)
 
