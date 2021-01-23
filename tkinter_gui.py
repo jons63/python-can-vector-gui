@@ -13,68 +13,65 @@ import can
 
 class LogPage(ttk.Frame):
     """ Displays a log of can messages """
-    def __close_log_window(self, tab_widget: ttk.Notebook, log_window: tk.Toplevel):
+    def __hide_window_log(self, tab_widget: ttk.Notebook):
         """ Close log window and show log tab instead
         Parameters
         ----------
         tab_widget :
             tk.Notebook widget
-        tk.Toplevel :
-            Window to close
         Returns
         -------
         void
         """
         # @TODO Don´t use static index
-        self.__Notifier.remove_listener(self.__Notifier.listeners[0])
+        self.__window_log.withdraw()
         tab_widget.add(tab_widget.tabs()[0]) 
-        self.__Notifier.add_listener(self.__tab_log)
-        log_window.destroy()
 
-    def __create_log_window(self, tab_widget: ttk.Notebook, bus: can.Bus):
+    def __show_window_log(self, tab_widget: ttk.Notebook):
         """ Open log window and hide log tab
         Parameters
         ----------
         tab_widget :
             tk.Notebook widget
-        bus :
-            Cam bus to listen for messages on
         Returns
         -------
         void
         """
-        self.__Notifier.remove_listener(self.__tab_log)
-        log_window = tk.Toplevel(tab_widget)
+        self.__window_log.deiconify()
         tab_widget.hide(0)
-        log_window.protocol("WM_DELETE_WINDOW", lambda: self.__close_log_window(tab_widget, log_window))
-        window_log = GuiLogger(log_window)
-        self.__Notifier.add_listener(window_log)
-        window_log.grid(sticky="NSEW")
-        tk.Grid.columnconfigure(log_window, window_log, weight=1)
-        tk.Grid.rowconfigure(log_window, window_log, weight=1)
 
-    def __init__(self, parent, bus):
+    def __init__(self, parent: ttk.Notebook, bus: can.Bus):
         """ Creates a frame containing a text widget that displays incoming can messages
         Parameters
         ----------
         parent :
             Parent widget
         bus :
-            Cam bus to listen for messages on
+            Can bus to listen for messages on
         """
         super().__init__(parent)
         self.name = "Log Page"
-        self.__tab_log = GuiLogger(self)
-        self.__Notifier = can.Notifier(bus, [self.__tab_log])
+        self.__tab_log = GuiLogger(self) #GuiLogger(self)
+        self.__window_log = tk.Toplevel(parent)#.withdraw()  # Create an invisible window
+        self.__window_log.withdraw()
+        self.__window_log.protocol("WM_DELETE_WINDOW", lambda: self.__hide_window_log( parent))
+        window_log = GuiLogger(self.__window_log)
+        can.Notifier(bus, [self.__tab_log, window_log])
+
+        
         style = ttk.Style()
         style.configure("Send.TButton", foreground="green", background="white")
         style.configure("Delete.TButton", foreground="red", background="white")
-        popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.__create_log_window(parent, bus))
+        popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.__show_window_log( parent))
 
         # Place all elements
         self.__tab_log.grid(sticky="NSEW")
         tk.Grid.columnconfigure(self, self.__tab_log, weight=1)
         tk.Grid.rowconfigure(self, self.__tab_log, weight=1)
+
+        window_log.grid(sticky="NSEW")
+        tk.Grid.columnconfigure(self.__window_log, window_log, weight=1)
+        tk.Grid.rowconfigure(self.__window_log, window_log, weight=1)
 
         popout_button.grid(row="1", padx=30,pady=30)
 
