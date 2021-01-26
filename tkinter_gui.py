@@ -294,3 +294,9 @@ class Application(tk.Frame):
         tabs = (LogPage(tab_control, bus), Message_Page(tab_control, bus), Download_page(tab_control))
         for tab in tabs:
             tab_control.add(tab,text=tab.name)
+
+if __name__== "__main__":
+    root = tk.Tk()
+    app = Application(master=root)
+    #print = app.logger.info <- NOTE FIX THIS. Should point to app.tabControl.first_page.logger.info Find way to access first_page
+    app.mainloop()
