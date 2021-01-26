@@ -4,6 +4,7 @@ import os
 #import platform
 import csv
 import re
+import argparse
 
 import tkinter as tk
 from tkinter import ttk
@@ -273,30 +274,28 @@ class Download_page(ttk.Frame):
         self.name = "Download"
         ttk.Label(self, text="This is the third page").grid(column=0, row=0,padx=30,pady=30)
 
-class Application(tk.Frame):
-    """ Tkinter main Frame """
-    def __init__(self, master='App'):
-        """ Application init function
-            Parameters
-            ----------
-            master :
-                Tkinter root widget Tk()
-            Returns
-            -------
-            Application
-                Application object
-        """
-        super().__init__(master)
-        self.master = master
-        bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=True)
-        tab_control = ttk.Notebook(master)
-        tab_control.pack(fill="both", expand="True")
-        tabs = (LogPage(tab_control, bus), Message_Page(tab_control, bus), Download_page(tab_control))
-        for tab in tabs:
-            tab_control.add(tab,text=tab.name)
+def parse_args(args):
+    # Parse command line arguments
+    parser = argparse.ArgumentParser('python tkinter_gui.py',
+                                     description='A simple gui for sending/receiveing can message with vector hardware',
+                                      )
+
+    parser.add_argument('-r', '--receive_own_messages', 
+                            help=   'The bus will receive its own outgoing messages. '
+                                    '\n For development purposes.',
+                            action='store_true')
+
+    parsed_args = parser.parse_args(args)
+
+    return parsed_args
 
 if __name__== "__main__":
+    parsed_args = parse_args(sys.argv[1:])
     root = tk.Tk()
-    app = Application(master=root)
-    #print = app.logger.info <- NOTE FIX THIS. Should point to app.tabControl.first_page.logger.info Find way to access first_page
+    bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=parsed_args.receive_own_messages)
+    app = ttk.Notebook(root)
+    app.pack(fill="both", expand="True")
+    tabs = (LogPage(app, bus), Message_Page(app, bus), Download_page(app))
+    for tab in tabs:
+        app.add(tab,text=tab.name)
     app.mainloop()
