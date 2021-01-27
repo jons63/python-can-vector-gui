@@ -26,7 +26,7 @@ class LogPage(ttk.Frame):
         """
         # @TODO Don´t use static index
         self.__window_log.withdraw()
-        tab_widget.add(tab_widget.tabs()[0]) 
+        tab_widget.add(tab_widget.tabs()[0])
 
     def __show_window_log(self, tab_widget: ttk.Notebook):
         """ Open log window and hide log tab
@@ -59,7 +59,7 @@ class LogPage(ttk.Frame):
         window_log = GuiLogger(self.__window_log)
         can.Notifier(bus, [self.__tab_log, window_log])
 
-        
+
         style = ttk.Style()
         style.configure("Send.TButton", foreground="green", background="white")
         style.configure("Delete.TButton", foreground="red", background="white")
@@ -121,9 +121,9 @@ class Message_Page(ttk.Frame):
         """
         command = self.command_name.text.get()
         command_bytes = ""
-        
+
         command_bytes = "{:s},{:s},{:s},{:s},{:s},{:s},{:s},{:s}".format(
-            self.hex0.text.get(), self.hex1.text.get(), self.hex2.text.get(), self.hex3.text.get(), 
+            self.hex0.text.get(), self.hex1.text.get(), self.hex2.text.get(), self.hex3.text.get(),
             self.hex4.text.get(), self.hex5.text.get(), self.hex6.text.get(), self.hex7.text.get()).upper()
         match = re.search("^([0-9A-F]{2}.*){8}$", command_bytes)
         print(command_bytes)
@@ -159,7 +159,7 @@ class Message_Page(ttk.Frame):
                 writer = csv.writer(file)
                 writer.writerows(file_lines)
                 self.listbox.delete(tk.ACTIVE)
-            
+
     def updateStatus(self, event: tk.Event):
         """ Update message information window
             Parameters
@@ -178,7 +178,7 @@ class Message_Page(ttk.Frame):
             self.information_text.insert(tk.END, command + "\n")
 
     def send_message(self, command_name: str):
-        """ Send message on Can bus 
+        """ Send message on Can bus
             Parameters
             ----------
             command_name :
@@ -190,9 +190,9 @@ class Message_Page(ttk.Frame):
         command = getCommand(command_name)
         message = can.Message(arbitration_id=123, data=[int(x, 16) for x in command[1:]])
         self.bus.send(message, timeout=0.2)
-        
+
     def __init__(self, parent, bus):
-        """ Message_Page init function 
+        """ Message_Page init function
             Parameters
             ----------
             parent :
@@ -237,14 +237,14 @@ class Message_Page(ttk.Frame):
 
         add_signal_button = ttk.Button(hex_entry_frame, text='Add', style="Send.TButton")
         add_signal_button['command'] = lambda: self.add_entry(None)
-        
+
         remove_signal_button = ttk.Button(signal_entry_frame, text='Remove', style="Delete.TButton")
-        remove_signal_button['command'] = lambda: self.delete_entry(None, self.listbox.get(tk.ACTIVE)) 
+        remove_signal_button['command'] = lambda: self.delete_entry(None, self.listbox.get(tk.ACTIVE))
 
         self.information_text = tk.Text(signal_information_frame)
 
         send_button = ttk.Button(signal_information_frame, text="Send", style="Send.TButton")
-        send_button['command'] = lambda: self.send_message(self.listbox.get(tk.ACTIVE)) 
+        send_button['command'] = lambda: self.send_message(self.listbox.get(tk.ACTIVE))
         # Place all elements
         #signal_entry.grid(row="0", column="0")
 
@@ -280,7 +280,7 @@ def parse_args(args):
                                      description='A simple gui for sending/receiveing can message with vector hardware',
                                       )
 
-    parser.add_argument('-r', '--receive_own_messages', 
+    parser.add_argument('-r', '--receive_own_messages',
                             help=   'The bus will receive its own outgoing messages. '
                                     '\n For development purposes.',
                             action='store_true')
@@ -292,6 +292,14 @@ def parse_args(args):
 if __name__== "__main__":
     parsed_args = parse_args(sys.argv[1:])
     root = tk.Tk()
+
+    menubar = tk.Menu(root)
+    com_type = tk.Menu(menubar, tearoff=0)
+    com_type.add_command(label='Can')
+    com_type.add_command(label='Serial')
+    menubar.add_cascade(label='Com', menu=com_type)
+    root.config(menu=menubar)
+
     bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=parsed_args.receive_own_messages)
     app = ttk.Notebook(root)
     app.pack(fill="both", expand="True")
