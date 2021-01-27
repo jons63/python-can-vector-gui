@@ -295,8 +295,8 @@ if __name__== "__main__":
 
     menubar = tk.Menu(root)
     com_type = tk.Menu(menubar, tearoff=0)
-    com_type.add_command(label='Can')
-    com_type.add_command(label='Serial')
+    com_type.add_radiobutton(label='Can')
+    com_type.add_radiobutton(label='Serial')
     menubar.add_cascade(label='Com', menu=com_type)
     root.config(menu=menubar)
 
