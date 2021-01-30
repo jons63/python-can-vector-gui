@@ -24,9 +24,8 @@ class LogPage(ttk.Frame):
         -------
         void
         """
-        # @TODO Don´t use static index
         self.__window_log.withdraw()
-        tab_widget.add(tab_widget.tabs()[0])
+        tab_widget.add(self)
 
     def __show_window_log(self, tab_widget: ttk.Notebook):
         """ Open log window and hide log tab
@@ -39,7 +38,7 @@ class LogPage(ttk.Frame):
         void
         """
         self.__window_log.deiconify()
-        tab_widget.hide(0)
+        tab_widget.hide('current')
 
     def __init__(self, parent: ttk.Notebook, bus: can.Bus):
         """ Creates a frame containing a text widget that displays incoming can messages
