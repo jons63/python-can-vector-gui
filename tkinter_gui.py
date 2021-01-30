@@ -38,7 +38,7 @@ class LogPage(ttk.Frame):
         void
         """
         self.__window_log.deiconify()
-        tab_widget.hide('current')
+        tab_widget.hide(self)
 
     def __init__(self, parent: ttk.Notebook, bus: can.Bus):
         """ Creates a frame containing a text widget that displays incoming can messages
