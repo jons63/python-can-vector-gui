@@ -12,6 +12,9 @@ from logger import GuiLogger
 from help_functions import getCommand
 import can
 
+CAN_MESSAGE_DATABASE    = 'data.csv'
+SERIAL_MESSAGE_DATABASE = 'serial.csv'
+
 class LogPage(ttk.Frame):
     """ Displays a log of can messages """
     def __hide_window_log(self, tab_widget: ttk.Notebook):
@@ -49,12 +52,12 @@ class LogPage(ttk.Frame):
         bus :
             Can bus to listen for messages on
         """
-        super().__init__(parent)
+        super().__init__(parent.root)
         self.name = "Log Page"
-        self.__tab_log = GuiLogger(self) #GuiLogger(self)
-        self.__window_log = tk.Toplevel(parent)#.withdraw()  # Create an invisible window
+        self.__tab_log = GuiLogger(self)
+        self.__window_log = tk.Toplevel(parent.root)
         self.__window_log.withdraw()
-        self.__window_log.protocol("WM_DELETE_WINDOW", lambda: self.__hide_window_log( parent))
+        self.__window_log.protocol("WM_DELETE_WINDOW", lambda: self.__hide_window_log(parent.root))
         window_log = GuiLogger(self.__window_log)
         can.Notifier(bus, [self.__tab_log, window_log])
 
@@ -62,7 +65,7 @@ class LogPage(ttk.Frame):
         style = ttk.Style()
         style.configure("Send.TButton", foreground="green", background="white")
         style.configure("Delete.TButton", foreground="red", background="white")
-        popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.__show_window_log( parent))
+        popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.__show_window_log(parent.root))
 
         # Place all elements
         self.__tab_log.grid(sticky="NSEW")
@@ -108,6 +111,21 @@ class Input_Field(tk.Entry):
 
 class Message_Page(ttk.Frame):
     """ View to add/remove and send messages """
+    def switch_com(self):
+        """ Switch message page to show active com messages.
+            Parameters
+            ----------
+            None
+            Returns
+            -------
+            void
+        """
+        self.listbox.delete(first=0, last=tk.END)
+        with open(self.active_com.get(), newline='') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                self.listbox.insert(tk.END, row[0])
+
     def add_entry(self, event):
         """ Add new message
             Parameters
@@ -129,7 +147,7 @@ class Message_Page(ttk.Frame):
         if match != None:
             command += "," + command_bytes
             command = command.split(sep=",")
-            with open('data.csv', 'a+', newline='') as file:
+            with open(self.active_com.get(), 'a+', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(command)
                 self.listbox.insert(tk.END, command[0])
@@ -148,13 +166,13 @@ class Message_Page(ttk.Frame):
         """
         if self.listbox.curselection():
             file_lines = list()
-            with open('data.csv', newline='') as file:
+            with open(self.active_com.get(), newline='') as file:
                 reader = csv.reader(file)
                 for row in reader:
                     name = row[0]
                     if text != name:
                         file_lines.append(row)
-            with open('data.csv', 'w', newline='') as file:
+            with open(self.active_com.get(), 'w', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerows(file_lines)
                 self.listbox.delete(tk.ACTIVE)
@@ -171,7 +189,7 @@ class Message_Page(ttk.Frame):
         """
         if self.listbox.curselection():
             name = self.listbox.get(self.listbox.curselection()[0])
-            command = getCommand(name)
+            command = getCommand(name, self.active_com.get())
             command = "{:s} {:s} {:s} {:s} {:s} {:s} {:s} {:s}".format(command[1], command[2], command[3], command[4], command[5], command[6], command[7], command[8])
             self.information_text.insert(tk.END, "Message content\n")
             self.information_text.insert(tk.END, command + "\n")
@@ -186,7 +204,7 @@ class Message_Page(ttk.Frame):
             -------
             void
         """
-        command = getCommand(command_name)
+        command = getCommand(command_name, self.active_com.get())
         message = can.Message(arbitration_id=123, data=[int(x, 16) for x in command[1:]])
         self.bus.send(message, timeout=0.2)
 
@@ -195,29 +213,29 @@ class Message_Page(ttk.Frame):
             Parameters
             ----------
             parent :
-                Frame to put view in
+                Toplevel object
             Returns
             -------
             Message_Page
                 Message_Page object
         """
-        super().__init__(parent)
+        super().__init__(parent.root)
         self.name = "Messages"
         self.bus = bus
+        coms = (CAN_MESSAGE_DATABASE, SERIAL_MESSAGE_DATABASE)
         signal_entry_frame = tk.Frame(self)
         signal_information_frame = tk.Frame(self)
         hex_entry_frame = tk.Frame(signal_entry_frame)
 
         self.listbox = tk.Listbox(signal_entry_frame)
         self.listbox.bind('<<ListboxSelect>>', self.updateStatus)
-        if not os.path.isfile('./data.csv'):
-            with open('data.csv', 'w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(["SN", "Movie", "Protagonist"])
-                writer.writerow([1, "Lord of the Rings", "Frodo Baggins"])
-                writer.writerow([2, "Harry Potter", "Harry Potter"])
+        for com in coms:
+            if not os.path.isfile(com):
+                with open(com, 'w', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['Empty message','00','00','00','00','00','00','00','00'])
 
-        with open('data.csv', 'r', newline='') as file:
+        with open(CAN_MESSAGE_DATABASE, 'r', newline='') as file:
             reader = csv.reader(file)
             for row in reader:
                 print(row)
@@ -267,9 +285,15 @@ class Message_Page(ttk.Frame):
         send_button.grid(row="1")
         signal_information_frame.grid(row="0", column="1", padx=(5,0))
 
+        self.active_com = tk.StringVar(value=CAN_MESSAGE_DATABASE)
+        com_type = tk.Menu(parent.menu, tearoff=0)
+        com_type.add_radiobutton(label='Can', variable=self.active_com, value=CAN_MESSAGE_DATABASE, command=self.switch_com)
+        com_type.add_radiobutton(label='Serial', variable=self.active_com, value=SERIAL_MESSAGE_DATABASE, command=self.switch_com)
+        parent.menu.add_cascade(label='Com', menu=com_type)
+
 class Download_page(ttk.Frame):
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent.root)
         self.name = "Download"
         ttk.Label(self, text="This is the third page").grid(column=0, row=0,padx=30,pady=30)
 
@@ -288,21 +312,37 @@ def parse_args(args):
 
     return parsed_args
 
-if __name__== "__main__":
+class App:
+    """ Top level class for gui """
+    def __init__(self):
+        """ App init function
+            Parameters
+            ----------
+            None
+            Returns
+            -------
+            App
+                App object
+        """
+        root = tk.Tk()
+        self.root = ttk.Notebook(root)
+        self.menu = tk.Menu(root)
+        self.tabs = ()
+        root.config(menu=self.menu)
+        
+    def add_tabs(self, tabs):
+        [self.root.add(tab, text=tab.name) for tab in tabs]
+
+def main():
     parsed_args = parse_args(sys.argv[1:])
-    root = tk.Tk()
-
-    menubar = tk.Menu(root)
-    com_type = tk.Menu(menubar, tearoff=0)
-    com_type.add_radiobutton(label='Can')
-    com_type.add_radiobutton(label='Serial')
-    menubar.add_cascade(label='Com', menu=com_type)
-    root.config(menu=menubar)
-
     bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=parsed_args.receive_own_messages)
-    app = ttk.Notebook(root)
-    app.pack(fill="both", expand="True")
+    app = App()
     tabs = (LogPage(app, bus), Message_Page(app, bus), Download_page(app))
-    for tab in tabs:
-        app.add(tab,text=tab.name)
-    app.mainloop()
+    app.add_tabs(tabs)
+
+    app.root.pack(fill="both", expand="True")
+
+    app.root.mainloop()
+
+if __name__== "__main__":
+    main()
