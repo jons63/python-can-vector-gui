@@ -11,6 +11,7 @@ from tkinter import ttk
 from logger import GuiLogger
 from help_functions import getCommand
 import can
+import serial
 
 CAN_MESSAGE_DATABASE    = 'data.csv'
 SERIAL_MESSAGE_DATABASE = 'serial.csv'
@@ -194,7 +195,7 @@ class Message_Page(ttk.Frame):
             self.information_text.insert(tk.END, "Message content\n")
             self.information_text.insert(tk.END, command + "\n")
 
-    def send_message(self, command_name: str):
+    def send_can_message(self, command_name: str):
         """ Send message on Can bus
             Parameters
             ----------
@@ -207,6 +208,39 @@ class Message_Page(ttk.Frame):
         command = getCommand(command_name, self.active_com.get())
         message = can.Message(arbitration_id=123, data=[int(x, 16) for x in command[1:]])
         self.bus.send(message, timeout=0.2)
+
+    def send_serial_message(self, command_name: str):
+        """ Send message on serial bus
+            Parameters
+            ----------
+            command_name :
+                Name of command to send
+            Returns
+            -------
+            void
+        """
+        command = getCommand(command_name, self.active_com.get())
+        bytes_to_send = bytes('$DS0B90\n', 'utf-8')
+        print(bytes_to_send)
+        bus = serial.Serial('COM10', 100000, timeout=2)
+        bus.write(bytes_to_send)
+        print(bus.readline())
+        bus.close()
+
+    def tp_send_message(self, command_name: str):
+        """ Redirect message to currently active com
+            Parameters
+            ----------
+            command_name :
+                Name of command to send
+            Returns
+            -------
+            void
+        """
+        if self.active_com.get() == CAN_MESSAGE_DATABASE:
+            self.send_can_message(command_name)
+        else:
+            self.send_serial_message(command_name)
 
     def __init__(self, parent, bus):
         """ Message_Page init function
@@ -261,7 +295,7 @@ class Message_Page(ttk.Frame):
         self.information_text = tk.Text(signal_information_frame)
 
         send_button = ttk.Button(signal_information_frame, text="Send", style="Send.TButton")
-        send_button['command'] = lambda: self.send_message(self.listbox.get(tk.ACTIVE))
+        send_button['command'] = lambda: self.tp_send_message(self.listbox.get(tk.ACTIVE))
         # Place all elements
         #signal_entry.grid(row="0", column="0")
 
@@ -329,7 +363,7 @@ class App:
         self.menu = tk.Menu(root)
         self.tabs = ()
         root.config(menu=self.menu)
-        
+
     def add_tabs(self, tabs):
         [self.root.add(tab, text=tab.name) for tab in tabs]
 
