@@ -12,6 +12,7 @@ from logger import GuiLogger
 from help_functions import getCommand
 import can
 import serial
+import serial.threaded
 
 CAN_MESSAGE_DATABASE    = 'data.csv'
 SERIAL_MESSAGE_DATABASE = 'serial.csv'
@@ -367,6 +368,12 @@ class App:
     def add_tabs(self, tabs):
         [self.root.add(tab, text=tab.name) for tab in tabs]
 
+class LinePrinter(serial.threaded.LineReader):
+
+    TERMINATOR = b'\n'
+    def handle_line(self, data):
+        print(data)
+
 def main():
     parsed_args = parse_args(sys.argv[1:])
     bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=parsed_args.receive_own_messages)
@@ -374,6 +381,13 @@ def main():
     tabs = (LogPage(app, bus), Message_Page(app, bus), Download_page(app))
     app.add_tabs(tabs)
 
+    serial_bus = serial.Serial('COM10', 100000, timeout=2)
+
+    t = serial.threaded.ReaderThread(serial_bus, LinePrinter)
+    t.start()
+    transport, protocol = t.connect()
+    protocol.write_line('$DS0B91')
+    #t.close()
     app.root.pack(fill="both", expand="True")
 
     app.root.mainloop()
