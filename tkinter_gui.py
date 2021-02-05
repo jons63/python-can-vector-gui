@@ -374,6 +374,14 @@ class LinePrinter(serial.threaded.LineReader):
     def handle_line(self, data):
         print(data)
 
+def rx(bus: serial.Serial):
+    def send(message: str):
+        if not bus.is_open:
+            bus.open()
+        bus.write(message)
+        bus.close()
+    return send
+
 def main():
     parsed_args = parse_args(sys.argv[1:])
     bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=parsed_args.receive_own_messages)
