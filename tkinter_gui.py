@@ -17,8 +17,14 @@ import serial.threaded
 CAN_MESSAGE_DATABASE    = 'data.csv'
 SERIAL_MESSAGE_DATABASE = 'serial.csv'
 
-class LogPage(ttk.Frame):
+class LogPage(ttk.Frame, can.Listener):
     """ Displays a log of can messages """
+    def on_message_received(self, msg: str):
+        for log in (self._tab_log, self._window_log):
+            log.config(state=tk.NORMAL)
+            log.insert(tk.END, str(msg) + '\n')
+            log.config(state=tk.DISABLED)
+            
     def __hide_window_log(self, tab_widget: ttk.Notebook):
         """ Close log window and show log tab instead
         Parameters
@@ -29,7 +35,7 @@ class LogPage(ttk.Frame):
         -------
         void
         """
-        self.__window_log.withdraw()
+        self._window.withdraw()
         tab_widget.add(self)
 
     def __show_window_log(self, tab_widget: ttk.Notebook):
@@ -42,26 +48,23 @@ class LogPage(ttk.Frame):
         -------
         void
         """
-        self.__window_log.deiconify()
+        self._window.deiconify()
         tab_widget.hide(self)
 
-    def __init__(self, parent: ttk.Notebook, bus: can.Bus):
+    def __init__(self, parent: ttk.Notebook):
         """ Creates a frame containing a text widget that displays incoming can messages
         Parameters
         ----------
         parent :
             Parent widget
-        bus :
-            Can bus to listen for messages on
         """
         super().__init__(parent.root)
         self.name = "Log Page"
-        self.__tab_log = GuiLogger(self)
-        self.__window_log = tk.Toplevel(parent.root)
-        self.__window_log.withdraw()
-        self.__window_log.protocol("WM_DELETE_WINDOW", lambda: self.__hide_window_log(parent.root))
-        window_log = GuiLogger(self.__window_log)
-        can.Notifier(bus, [self.__tab_log, window_log])
+        self._tab_log = tk.Text(self)
+        self._window = tk.Toplevel(parent.root)
+        self._window.withdraw()
+        self._window.protocol("WM_DELETE_WINDOW", lambda: self.__hide_window_log(parent.root))
+        self._window_log = tk.Text(self._window)
 
 
         style = ttk.Style()
@@ -70,13 +73,13 @@ class LogPage(ttk.Frame):
         popout_button = ttk.Button(self, text="Popout log", style="Send.TButton", command= lambda: self.__show_window_log(parent.root))
 
         # Place all elements
-        self.__tab_log.grid(sticky="NSEW")
-        tk.Grid.columnconfigure(self, self.__tab_log, weight=1)
-        tk.Grid.rowconfigure(self, self.__tab_log, weight=1)
+        self._tab_log.grid(sticky="NSEW")
+        tk.Grid.columnconfigure(self, self._tab_log, weight=1)
+        tk.Grid.rowconfigure(self, self._tab_log, weight=1)
 
-        window_log.grid(sticky="NSEW")
-        tk.Grid.columnconfigure(self.__window_log, window_log, weight=1)
-        tk.Grid.rowconfigure(self.__window_log, window_log, weight=1)
+        self._window_log.grid(sticky="NSEW")
+        tk.Grid.columnconfigure(self._window, self._window_log, weight=1)
+        tk.Grid.rowconfigure(self._window, self._window_log, weight=1)
 
         popout_button.grid(row="1", padx=30,pady=30)
 
@@ -386,9 +389,9 @@ def main():
     parsed_args = parse_args(sys.argv[1:])
     bus = can.Bus(interface='vector', app_name="xlCANcontrol", channel=0, receive_own_messages=parsed_args.receive_own_messages)
     app = App()
-    tabs = (LogPage(app, bus), Message_Page(app, bus), Download_page(app))
+    tabs = (LogPage(app), Message_Page(app, bus), Download_page(app))
     app.add_tabs(tabs)
-
+    can.Notifier(bus, [tabs[0]])
     serial_bus = serial.Serial('COM10', 100000, timeout=2)
 
     t = serial.threaded.ReaderThread(serial_bus, LinePrinter)
